@@ -39,6 +39,8 @@ const adminSection  = $('#admin-section');
 const worldForm     = $('#world-form');
 const formStatus    = $('#form-status');
 const worldsGrid    = $('#worlds-grid');
+const worldsGate    = $('#worlds-gate');
+const gateLoginBtn  = $('#gate-login-btn');
 
 const modalOverlay      = $('#modal-overlay');
 const modalClose        = $('#modal-close');
@@ -91,7 +93,24 @@ auth.onAuthStateChanged((user) => {
   currentUser = user;
   renderAuthUI(user);
   toggleAdminSection(user);
+  toggleWorldsAccess(user);
 });
+
+gateLoginBtn.addEventListener('click', signIn);
+
+/**
+ * Worlds list is only visible to signed-in users. Logged out visitors see
+ * the "Sign in to view worlds" gate instead of the grid.
+ */
+function toggleWorldsAccess(user) {
+  if (user) {
+    worldsGate.hidden = true;
+    worldsGrid.hidden = false;
+  } else {
+    worldsGate.hidden = false;
+    worldsGrid.hidden = true;
+  }
+}
 
 function renderAuthUI(user) {
   if (!user) {
