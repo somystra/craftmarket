@@ -67,19 +67,18 @@
                         <label for="world-desc">Dunyo haqida qisqacha ta'rif (Description)</label>
                         <textarea id="world-desc" rows="3" required placeholder="Dunyo ichidagi binolar va fermalar haqida yozing..."></textarea>
                     </div>
+                    
                     <div class="form-group">
-                        <label for="world-image">Dunyo rasmini yuklang (Rasm fayli)</label>
-                        <input type="file" id="world-image" accept="image/*" required>
-                        <div id="upload-progress" class="progress-bar-container hidden">
-                            <div class="progress-bar"></div>
-                        </div>
+                        <label for="world-image-url">Dunyo rasmiga havola (Image URL)</label>
+                        <input type="url" id="world-image-url" required placeholder="Masalan: https://i.ibb.co/xyz/world.png (ImgBB yoki Discord linki)">
                     </div>
+                    
                     <div class="form-group">
                         <label for="world-link">Xavfsiz yuklab olish havolasi (Google Drive / MediaFire Link)</label>
                         <input type="url" id="world-link" required placeholder="https://mediafire.com/... yoki https://drive.google.com/...">
                     </div>
                     <button type="submit" id="btn-submit-world" class="neon-btn admin-submit-btn">
-                        <i class="fas fa-cloud-upload-alt"></i> Dunyoni Saytga Qo'shish
+                        <i class="fas fa-plus-circle"></i> Dunyoni Saytga Qo'shish
                     </button>
                 </form>
             </div>
@@ -106,7 +105,7 @@
         <div class="modal-content">
             <span class="close-modal">&times;</span>
             <h3 class="modal-title"><i class="fab fa-youtube text-red"></i> Obunani Tasdiqlash</h3>
-            <p>Ushbu dunyoni yuklab olish uchun **CraftOrbit** YouTube kanaliga obuna bo'lishingiz shart.</p>
+            <p>Ushbu dunyoni yuklab olish uchun <strong>CraftOrbit</strong> YouTube kanaliga obuna bo'lishingiz shart.</p>
             
             <div class="modal-actions">
                 <a href="https://www.youtube.com/channel/UCKdUT9Kd8k-n38C1JXgLzTQ?sub_confirmation=1" target="_blank" id="btn-go-to-sub" class="modal-btn youtube-btn">
@@ -125,8 +124,7 @@
             "imports": {
                 "firebase/app": "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js",
                 "firebase/auth": "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js",
-                "firebase/firestore": "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js",
-                "firebase/storage": "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js"
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js"
             }
         }
     </script>
