@@ -1,212 +1,135 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uz">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CraftOrbit — Build, Explore, and Conquer!</title>
-<meta name="description" content="CraftOrbit — custom OptiFine Minecraft worlds. Subscribe to unlock downloads.">
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CraftOrbit - Minecraft Worlds Portfolio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- ============ CHUNK LOADER (signature loading screen) ============ -->
-<div id="chunk-loader" aria-hidden="true">
-  <div class="chunk-grid">
-    <span></span><span></span><span></span><span></span><span></span><span></span>
-    <span></span><span></span><span></span><span></span><span></span><span></span>
-  </div>
-  <p class="loader-label">GENERATING WORLD…</p>
-</div>
-
-<!-- ============ NAVBAR ============ -->
-<header class="navbar" id="navbar">
-  <div class="navbar-inner">
-    <a href="#top" class="brand">
-      <span class="brand-mark">◈</span>
-      <span class="brand-name">CraftOrbit</span>
-    </a>
-
-    <nav class="nav-links">
-      <a href="#worlds">Worlds</a>
-      <a href="#about">About</a>
-    </nav>
-
-    <div class="auth-slot" id="auth-slot">
-      <!-- JS swaps this between login button / user chip -->
-      <button id="login-btn" class="btn btn-neon">
-        <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path fill="currentColor" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.9c1.7-1.57 2.7-3.88 2.7-6.62Z" opacity=".4"/><path fill="currentColor" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.9-2.26c-.8.54-1.84.86-3.06.86-2.35 0-4.34-1.59-5.05-3.72H.94v2.33A9 9 0 0 0 9 18Z"/><path fill="currentColor" d="M3.95 10.7A5.4 5.4 0 0 1 3.66 9c0-.59.1-1.16.29-1.7V4.97H.94A9 9 0 0 0 0 9c0 1.45.35 2.83.94 4.03l3.01-2.33Z"/><path fill="currentColor" d="M9 3.58c1.32 0 2.5.46 3.44 1.35l2.58-2.58C13.46.89 11.42 0 9 0A9 9 0 0 0 .94 4.97l3.01 2.33C4.66 5.17 6.65 3.58 9 3.58Z"/></svg>
-        <span>Login with Google</span>
-      </button>
-    </div>
-  </div>
-</header>
-
-<!-- ============ HERO ============ -->
-<section class="hero" id="top">
-  <div class="voxel-field" aria-hidden="true"></div>
-  <div class="hero-inner">
-    <p class="eyebrow">◈ OPTIFINE WORLD ARCHIVE</p>
-    <h1 class="hero-title">CraftOrbit</h1>
-    <p class="hero-slogan">Build, Explore, and Conquer!</p>
-
-    <div class="hero-banner">
-      <div class="hero-banner-glow"></div>
-      <div class="hero-banner-grid" aria-hidden="true"></div>
-      <span class="hero-banner-label">CHANNEL BANNER</span>
+    <div id="login-gate" class="splash-screen">
+        <div class="splash-card">
+            <div class="pixel-logo">CraftOrbit</div>
+            <p class="slogan">"Build, Explore, and Conquer!"</p>
+            <p class="hint-text">Saytga kirish va dunyolarni yuklab olish uchun Google hisobingiz orqali kiring.</p>
+            <button id="btn-google-login" class="neon-btn login-btn">
+                <i class="fab fa-google"></i> Google orqali kirish
+            </button>
+        </div>
     </div>
 
-    <a href="#worlds" class="btn btn-outline scroll-cta">
-      <span>Enter the Worlds</span>
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v11M2 7l5 5 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg>
-    </a>
-  </div>
-</section>
+    <div id="main-content" class="hidden">
+        
+        <nav class="navbar">
+            <div class="nav-container">
+                <a href="#" class="nav-logo">CraftOrbit</a>
+                <div id="user-profile" class="user-profile">
+                    <img id="user-avatar" src="" alt="Avatar" class="avatar">
+                    <button id="btn-logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Chiqish</button>
+                </div>
+            </div>
+        </nav>
 
-<!-- ============ ADMIN DASHBOARD (hidden unless admin) ============ -->
-<section class="admin-section" id="admin-section" hidden>
-  <div class="section-head">
-    <p class="eyebrow">◈ ADMIN ACCESS GRANTED</p>
-    <h2 class="pixel-heading">Upload a World</h2>
-  </div>
+        <header class="hero">
+            <div class="hero-container">
+                <div class="banner-placeholder">
+                    <div class="banner-text">
+                        <h1>CraftOrbit</h1>
+                        <p>"Build, Explore, and Conquer!"</p>
+                    </div>
+                </div>
+            </div>
+        </header>
 
-  <form id="world-form" class="glass-panel admin-form">
-    <div class="form-row">
-      <label for="w-title">World Title</label>
-      <input id="w-title" type="text" placeholder="e.g. Obsidian Skylands" required>
+        <section id="admin-section" class="admin-panel hidden">
+            <div class="container">
+                <h2 class="section-title"><i class="fas fa-user-shield"></i> Admin Panel (Yangi Dunyo Qo'shish)</h2>
+                <form id="admin-upload-form" class="admin-form">
+                    <div class="form-group">
+                        <label for="world-title">Dunyo nomi (Title)</label>
+                        <input type="text" id="world-title" required placeholder="Masalan: CraftOrbit Survival World V1">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="world-version">Minecraft Versiyasi</label>
+                            <input type="text" id="world-version" required placeholder="Masalan: 1.20.1">
+                        </div>
+                        <div class="form-group checkbox-group">
+                            <label for="world-optifine">
+                                <input type="checkbox" id="world-optifine" checked> OptiFine Mod talab qilinadi
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="world-desc">Dunyo haqida qisqacha ta'rif (Description)</label>
+                        <textarea id="world-desc" rows="3" required placeholder="Dunyo ichidagi binolar va fermalar haqida yozing..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="world-image">Dunyo rasmini yuklang (Rasm fayli)</label>
+                        <input type="file" id="world-image" accept="image/*" required>
+                        <div id="upload-progress" class="progress-bar-container hidden">
+                            <div class="progress-bar"></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="world-link">Xavfsiz yuklab olish havolasi (Google Drive / MediaFire Link)</label>
+                        <input type="url" id="world-link" required placeholder="https://mediafire.com/... yoki https://drive.google.com/...">
+                    </div>
+                    <button type="submit" id="btn-submit-world" class="neon-btn admin-submit-btn">
+                        <i class="fas fa-cloud-upload-alt"></i> Dunyoni Saytga Qo'shish
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <section class="worlds-section">
+            <div class="container">
+                <h2 class="section-title"><i class="fas fa-cubes"></i> Minecraft Dunyolari</h2>
+                
+                <div class="search-container">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="search-bar" placeholder="Dunyolar bo'ylab real-vaqtda qidirish (Nomi, versiyasi...)" autocomplete="off">
+                </div>
+
+                <div id="worlds-grid" class="worlds-grid">
+                    <div class="loading-spinner">Ma'lumotlar yuklanmoqda...</div>
+                </div>
+            </div>
+        </section>
+
     </div>
 
-    <div class="form-row form-row-split">
-      <div>
-        <label for="w-version">Minecraft Version</label>
-        <input id="w-version" type="text" placeholder="1.21.1" required>
-      </div>
-      <div class="checkbox-row">
-        <label for="w-optifine">
-          <input id="w-optifine" type="checkbox" checked>
-          <span>OptiFine Required</span>
-        </label>
-      </div>
+    <div id="sub-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h3 class="modal-title"><i class="fab fa-youtube text-red"></i> Obunani Tasdiqlash</h3>
+            <p>Ushbu dunyoni yuklab olish uchun **CraftOrbit** YouTube kanaliga obuna bo'lishingiz shart.</p>
+            
+            <div class="modal-actions">
+                <a href="https://www.youtube.com/channel/UCKdUT9Kd8k-n38C1JXgLzTQ?sub_confirmation=1" target="_blank" id="btn-go-to-sub" class="modal-btn youtube-btn">
+                    <i class="fab fa-youtube"></i> 1. Kanalga obuna bo'lish
+                </a>
+                <button id="btn-verify-sub" class="modal-btn verify-btn">
+                    <i class="fas fa-check-circle"></i> 2. Tekshirish
+                </button>
+            </div>
+            <p id="modal-error-msg" class="error-msg hidden">Siz hali kanalga obuna bo'lmagansiz! Iltimos, obuna bo'lib qaytadan tekshirib ko'ring.</p>
+        </div>
     </div>
 
-    <div class="form-row">
-      <label for="w-desc">Description</label>
-      <textarea id="w-desc" rows="3" placeholder="A short pitch for the world…" required></textarea>
-    </div>
-
-    <div class="form-row">
-      <label for="w-image">Preview Image URL</label>
-      <input id="w-image" type="url" placeholder="https://…" required>
-    </div>
-
-    <div class="form-row">
-      <label for="w-link">Secure Download Link</label>
-      <input id="w-link" type="url" placeholder="Google Drive / MediaFire link" required>
-    </div>
-
-    <button type="submit" class="btn btn-neon-solid">Publish World</button>
-    <p class="form-status" id="form-status" role="status"></p>
-  </form>
-</section>
-
-<!-- ============ WORLDS GRID ============ -->
-<section class="worlds-section" id="worlds">
-  <div class="section-head">
-    <p class="eyebrow">◈ ARCHIVE</p>
-    <h2 class="pixel-heading">Custom Worlds</h2>
-    <p class="section-sub">Sign in with Google to see uploaded worlds. Every download is subscriber-locked — subscribe on YouTube, verify, and unlock instantly.</p>
-  </div>
-
-  <!-- Shown when the visitor is NOT signed in yet -->
-  <div class="worlds-gate glass-panel" id="worlds-gate">
-    <svg width="34" height="34" viewBox="0 0 14 14" fill="none" aria-hidden="true"><rect x="3" y="6" width="8" height="6" rx="1" stroke="currentColor" stroke-width="1"/><path d="M4.5 6V4a2.5 2.5 0 0 1 5 0v2" stroke="currentColor" stroke-width="1"/></svg>
-    <h3 class="pixel-heading">Sign in to view worlds</h3>
-    <p class="modal-text">Log in with your Google account to browse every world CraftOrbit has uploaded.</p>
-    <button id="gate-login-btn" class="btn btn-neon-solid">
-      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path fill="currentColor" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.9c1.7-1.57 2.7-3.88 2.7-6.62Z" opacity=".4"/><path fill="currentColor" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.9-2.26c-.8.54-1.84.86-3.06.86-2.35 0-4.34-1.59-5.05-3.72H.94v2.33A9 9 0 0 0 9 18Z"/><path fill="currentColor" d="M3.95 10.7A5.4 5.4 0 0 1 3.66 9c0-.59.1-1.16.29-1.7V4.97H.94A9 9 0 0 0 0 9c0 1.45.35 2.83.94 4.03l3.01-2.33Z"/><path fill="currentColor" d="M9 3.58c1.32 0 2.5.46 3.44 1.35l2.58-2.58C13.46.89 11.42 0 9 0A9 9 0 0 0 .94 4.97l3.01 2.33C4.66 5.17 6.65 3.58 9 3.58Z"/></svg>
-      <span>Login with Google</span>
-    </button>
-  </div>
-
-  <div class="worlds-grid" id="worlds-grid" hidden>
-    <!-- Default placeholder cards (rendered server-side / statically) -->
-    <article class="world-card" data-placeholder="true">
-      <div class="world-card-image" style="background-image:url('https://images.unsplash.com/photo-1622479999999?auto=format&fit=crop&w=800&q=60')">
-        <span class="badge badge-version">1.20.1</span>
-        <span class="badge badge-optifine">OptiFine</span>
-      </div>
-      <div class="world-card-body">
-        <h3>CraftOrbit Survival World V1</h3>
-        <p>A hand-shaped survival island chain with custom terrain sculpting and hidden loot vaults.</p>
-        <button class="btn btn-locked" data-action="unlock">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="3" y="6" width="8" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><path d="M4.5 6V4a2.5 2.5 0 0 1 5 0v2" stroke="currentColor" stroke-width="1.4"/></svg>
-          <span>Unlock Download</span>
-        </button>
-      </div>
-    </article>
-
-    <article class="world-card" data-placeholder="true">
-      <div class="world-card-image" style="background-image:url('https://images.unsplash.com/photo-1622480000000?auto=format&fit=crop&w=800&q=60')">
-        <span class="badge badge-version">1.21.1</span>
-        <span class="badge badge-optifine">OptiFine</span>
-      </div>
-      <div class="world-card-body">
-        <h3>CraftOrbit Skyblock: Genesis</h3>
-        <p>A floating-island skyblock map with a fully custom quest line and shader-optimized biomes.</p>
-        <button class="btn btn-locked" data-action="unlock">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="3" y="6" width="8" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><path d="M4.5 6V4a2.5 2.5 0 0 1 5 0v2" stroke="currentColor" stroke-width="1.4"/></svg>
-          <span>Unlock Download</span>
-        </button>
-      </div>
-    </article>
-
-    <!-- Dynamic Firestore worlds are injected here by app.js -->
-  </div>
-</section>
-
-<!-- ============ ABOUT / FOOTER ============ -->
-<section class="about-section" id="about">
-  <div class="glass-panel about-panel">
-    <p class="eyebrow">◈ ABOUT THE CHANNEL</p>
-    <h2 class="pixel-heading">CraftOrbit</h2>
-    <p>CraftOrbit builds custom OptiFine-enhanced Minecraft worlds — survival islands, skyblocks, and shader showcases — and shares them with subscribers first. New worlds drop regularly on the channel.</p>
-  </div>
-</section>
-
-<footer class="site-footer">
-  <p>© <span id="year"></span> CraftOrbit. All worlds built with care.</p>
-</footer>
-
-<!-- ============ SUBSCRIPTION MODAL ============ -->
-<div class="modal-overlay" id="modal-overlay" hidden>
-  <div class="modal glass-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-    <button class="modal-close" id="modal-close" aria-label="Close">&times;</button>
-    <p class="eyebrow" id="modal-world-name">◈ WORLD LOCKED</p>
-    <h3 id="modal-title" class="pixel-heading modal-title">Subscriber Access Required</h3>
-    <p class="modal-text" id="modal-text">Subscribe to CraftOrbit on YouTube, then verify your subscription to unlock this download.</p>
-
-    <div class="modal-status" id="modal-status" hidden></div>
-
-    <div class="modal-actions" id="modal-actions">
-      <button class="btn btn-outline" id="open-channel-btn">Open Channel</button>
-      <button class="btn btn-neon-solid" id="verify-btn">Verify Subscription</button>
-    </div>
-
-    <a class="btn btn-download" id="download-link-btn" href="#" target="_blank" rel="noopener" hidden>
-      <span>Download World</span>
-    </a>
-  </div>
-</div>
-
-<!-- ============ FIREBASE SDKs (compat, CDN) ============ -->
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-
-<script src="app.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js",
+                "firebase/auth": "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js",
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js",
+                "firebase/storage": "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js"
+            }
+        }
+    </script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>
