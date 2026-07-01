@@ -341,6 +341,17 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
   gap: 24px;
 }
 
+/* Login gate shown before the visitor signs in */
+.worlds-gate {
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 48px 36px;
+  text-align: center;
+}
+.worlds-gate svg { color: var(--emerald); margin-bottom: 16px; }
+.worlds-gate .pixel-heading { font-size: 16px; }
+.worlds-gate .btn { margin-top: 6px; }
+
 .world-card {
   background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015));
   border: 1px solid var(--panel-border);
