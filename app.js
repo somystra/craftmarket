@@ -1,9 +1,10 @@
-/* ==========================================================================
-   CraftOrbit — app.js
-   Vanilla ES6+. Firebase Auth + Firestore + YouTube Data API v3 verification.
-   ========================================================================== */
+// Firebase modullarini import qilish
+import { initializeApp } from "firebase/app";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "firebase/firestore";
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
-/* ---------- 1. Firebase config & init ---------- */
+// 1. SIZNING TAYYOR FIREBASE KONFIGURATSIYANGIZ
 const firebaseConfig = {
   apiKey: "AIzaSyBqKqszWBCMrKIjN0Wb9PxC7wArkjd5FSU",
   authDomain: "netchat-52007.firebaseapp.com",
@@ -15,355 +16,290 @@ const firebaseConfig = {
   measurementId: "G-YKM3J5YR9F"
 };
 
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
+// Firebase xizmatlarini ishga tushirish
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+const provider = new GoogleAuthProvider();
 
-/* ---------- 2. Channel / admin constants ---------- */
-const YOUTUBE_CHANNEL_ID = "UCKdUT9Kd8k-n38C1JXgLzTQ";
-const CHANNEL_NAME = "CraftOrbit";
+// YouTube API uchun zarur bo'lgan scopelarni qo'shish (Obunani tekshirish uchun)
+provider.addScope('https://www.googleapis.com/auth/youtube.readonly');
+
+// 2. GLOBAL O'ZGARUVCHILAR VA DOIMIYLAR
 const ADMIN_EMAIL = "akmalsomirzaev64@gmail.com";
-const YOUTUBE_CHANNEL_URL = `https://www.youtube.com/channel/${YOUTUBE_CHANNEL_ID}?sub_confirmation=1`;
+const CHANNEL_ID = "UCKdUT9Kd8k-n38C1JXgLzTQ"; // CraftOrbit Channel ID
+let currentUser = null;
+let userAccessToken = null; // YouTube API uchun token
+let allWorlds = []; // Qidiruv filtratsiyasi uchun kesh
+let activeDownloadLink = null; // Modal oynada ochilishi kerak bo'lgan link
 
-/* In-memory session state (never persisted to localStorage) */
-let currentUser = null;      // Firebase user object
-let currentAccessToken = null; // OAuth access token w/ youtube.readonly scope
-let pendingWorld = null;     // world object the modal is currently unlocking
+// DOM Elementlarini ushlab olish
+const loginGate = document.getElementById("login-gate");
+const mainContent = document.getElementById("main-content");
+const btnGoogleLogin = document.getElementById("btn-google-login");
+const btnLogout = document.getElementById("btn-logout");
+const userAvatar = document.getElementById("user-avatar");
+const adminSection = document.getElementById("admin-section");
+const adminForm = document.getElementById("admin-upload-form");
+const progressBar = document.querySelector(".progress-bar");
+const progressBarContainer = document.getElementById("upload-progress");
+const worldsGrid = document.getElementById("worlds-grid");
+const searchBar = document.getElementById("search-bar");
 
-/* ---------- 3. DOM refs ---------- */
-const $ = (sel) => document.querySelector(sel);
+// Modal Elementlari
+const subModal = document.getElementById("sub-modal");
+const closeModal = document.querySelector(".close-modal");
+const btnVerifySub = document.getElementById("btn-verify-sub");
+const modalErrorMsg = document.getElementById("modal-error-msg");
 
-const chunkLoader   = $('#chunk-loader');
-const authSlot      = $('#auth-slot');
-const adminSection  = $('#admin-section');
-const worldForm     = $('#world-form');
-const formStatus    = $('#form-status');
-const worldsGrid    = $('#worlds-grid');
-const worldsGate    = $('#worlds-gate');
-const gateLoginBtn  = $('#gate-login-btn');
-
-const modalOverlay      = $('#modal-overlay');
-const modalClose        = $('#modal-close');
-const modalWorldName    = $('#modal-world-name');
-const modalText         = $('#modal-text');
-const modalStatus       = $('#modal-status');
-const modalActions      = $('#modal-actions');
-const openChannelBtn    = $('#open-channel-btn');
-const verifyBtn         = $('#verify-btn');
-const downloadLinkBtn   = $('#download-link-btn');
-
-/* ---------- 4. Boot ---------- */
-window.addEventListener('load', () => {
-  $('#year').textContent = new Date().getFullYear();
-  // Give the chunk-loader a beat so the animation reads intentionally,
-  // then reveal the page.
-  setTimeout(() => chunkLoader.classList.add('hidden'), 700);
+// 3. AUTHENTICATION (GOOGLE TIZIMIGA KIRISH) LOGIKASI
+btnGoogleLogin.addEventListener("click", async () => {
+    try {
+        const result = await signInWithPopup(auth, provider);
+        // Google OAuth muvaffaqiyatli bo'lsa, YouTube API uchun token olamiz
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        userAccessToken = credential.accessToken;
+    } catch (error) {
+        console.error("Tizimga kirishda xatolik:", error);
+        alert("Google orqali kirish amalga oshmadi. Qaytadan urinib ko'ring.");
+    }
 });
 
-/* ---------- 5. Auth ---------- */
-function buildGoogleProvider() {
-  const provider = new firebase.auth.GoogleAuthProvider();
-  // Needed to check the user's own subscriptions via YouTube Data API v3.
-  provider.addScope('https://www.googleapis.com/auth/youtube.readonly');
-  provider.setCustomParameters({ prompt: 'select_account' });
-  return provider;
-}
-
-async function signIn() {
-  try {
-    const result = await auth.signInWithPopup(buildGoogleProvider());
-    const credential = firebase.auth.GoogleAuthProvider.credentialFromResult(result);
-    currentAccessToken = credential?.accessToken || null;
-    currentUser = result.user;
-    return currentUser;
-  } catch (err) {
-    console.error('Sign-in failed:', err);
-    alert('Sign-in was cancelled or failed. Please try again.');
-    return null;
-  }
-}
-
-async function signOutUser() {
-  await auth.signOut();
-  currentUser = null;
-  currentAccessToken = null;
-}
-
-auth.onAuthStateChanged((user) => {
-  currentUser = user;
-  renderAuthUI(user);
-  toggleAdminSection(user);
-  toggleWorldsAccess(user);
-});
-
-gateLoginBtn.addEventListener('click', signIn);
-
-/**
- * Worlds list is only visible to signed-in users. Logged out visitors see
- * the "Sign in to view worlds" gate instead of the grid.
- */
-function toggleWorldsAccess(user) {
-  if (user) {
-    worldsGate.hidden = true;
-    worldsGrid.hidden = false;
-  } else {
-    worldsGate.hidden = false;
-    worldsGrid.hidden = true;
-  }
-}
-
-function renderAuthUI(user) {
-  if (!user) {
-    authSlot.innerHTML = `
-      <button id="login-btn" class="btn btn-neon">
-        <span>Login with Google</span>
-      </button>`;
-    $('#login-btn').addEventListener('click', signIn);
-    return;
-  }
-
-  const isAdmin = user.email === ADMIN_EMAIL;
-  authSlot.innerHTML = `
-    <div class="user-chip">
-      ${isAdmin ? '<span class="admin-tag">ADMIN</span>' : ''}
-      <img src="${user.photoURL || ''}" alt="${user.displayName || 'User'}" referrerpolicy="no-referrer">
-      <button id="logout-btn" class="btn btn-outline">Logout</button>
-    </div>`;
-  $('#logout-btn').addEventListener('click', signOutUser);
-}
-
-function toggleAdminSection(user) {
-  const isAdmin = !!user && user.email === ADMIN_EMAIL;
-  adminSection.hidden = !isAdmin;
-}
-
-/* ---------- 6. Admin: world upload form ---------- */
-worldForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-
-  if (!currentUser || currentUser.email !== ADMIN_EMAIL) {
-    setFormStatus('Not authorized.', true);
-    return;
-  }
-
-  const world = {
-    title: $('#w-title').value.trim(),
-    version: $('#w-version').value.trim(),
-    optifine: $('#w-optifine').checked,
-    description: $('#w-desc').value.trim(),
-    imageUrl: $('#w-image').value.trim(),
-    downloadUrl: $('#w-link').value.trim(),
-    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-  };
-
-  try {
-    setFormStatus('Publishing…');
-    await db.collection('worlds').add(world);
-    setFormStatus('World published ✔');
-    worldForm.reset();
-    $('#w-optifine').checked = true;
-  } catch (err) {
-    console.error('Publish failed:', err);
-    setFormStatus('Failed to publish. Check Firestore rules/console.', true);
-  }
-});
-
-function setFormStatus(msg, isError = false) {
-  formStatus.textContent = msg;
-  formStatus.classList.toggle('error', isError);
-}
-
-/* ---------- 7. Worlds grid: live Firestore listener ---------- */
-db.collection('worlds').orderBy('createdAt', 'desc').onSnapshot(
-  (snapshot) => {
-    // Remove previously-rendered dynamic cards (keep static placeholders).
-    worldsGrid.querySelectorAll('[data-dynamic="true"]').forEach((n) => n.remove());
-
-    snapshot.forEach((doc) => {
-      const world = { id: doc.id, ...doc.data() };
-      worldsGrid.insertAdjacentHTML('beforeend', renderWorldCard(world));
+btnLogout.addEventListener("click", () => {
+    signOut(auth).then(() => {
+        window.location.reload();
     });
-
-    attachUnlockHandlers();
-  },
-  (err) => console.error('Firestore listener error:', err)
-);
-
-function renderWorldCard(world) {
-  const img = world.imageUrl || '';
-  return `
-    <article class="world-card" data-dynamic="true" data-id="${world.id}">
-      <div class="world-card-image" style="background-image:url('${escapeHtml(img)}')">
-        <span class="badge badge-version">${escapeHtml(world.version || '')}</span>
-        ${world.optifine ? '<span class="badge badge-optifine">OptiFine</span>' : ''}
-      </div>
-      <div class="world-card-body">
-        <h3>${escapeHtml(world.title || 'Untitled World')}</h3>
-        <p>${escapeHtml(world.description || '')}</p>
-        <button class="btn btn-locked" data-action="unlock" data-id="${world.id}">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="3" y="6" width="8" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><path d="M4.5 6V4a2.5 2.5 0 0 1 5 0v2" stroke="currentColor" stroke-width="1.4"/></svg>
-          <span>Unlock Download</span>
-        </button>
-      </div>
-    </article>`;
-}
-
-function escapeHtml(str) {
-  const d = document.createElement('div');
-  d.textContent = str ?? '';
-  return d.innerHTML;
-}
-
-/* Static placeholder cards' download links (no Firestore doc behind them) */
-const PLACEHOLDER_WORLDS = {
-  0: { title: 'CraftOrbit Survival World V1', downloadUrl: '#', name: 'CraftOrbit Survival World V1' },
-  1: { title: 'CraftOrbit Skyblock: Genesis', downloadUrl: '#', name: 'CraftOrbit Skyblock: Genesis' },
-};
-
-function attachUnlockHandlers() {
-  document.querySelectorAll('[data-action="unlock"]').forEach((btn) => {
-    btn.onclick = () => handleUnlockClick(btn);
-  });
-}
-
-// Attach handlers for the two static placeholder cards on first load too.
-document.querySelectorAll('.world-card[data-placeholder="true"] [data-action="unlock"]').forEach((btn, i) => {
-  btn.dataset.placeholderIndex = i;
-  btn.onclick = () => handleUnlockClick(btn);
 });
 
-/* ---------- 8. Unlock / subscription verification flow ---------- */
-async function handleUnlockClick(btn) {
-  // Resolve which world this button refers to.
-  let world;
-  if (btn.dataset.id) {
-    world = await getWorldById(btn.dataset.id);
-  } else {
-    const idx = btn.dataset.placeholderIndex;
-    world = PLACEHOLDER_WORLDS[idx];
-  }
-  if (!world) return;
-
-  pendingWorld = { ...world, _btn: btn };
-
-  // 1. Require Google sign-in first.
-  if (!currentUser) {
-    const user = await signIn();
-    if (!user) return; // cancelled
-  }
-
-  openModal();
-}
-
-async function getWorldById(id) {
-  try {
-    const snap = await db.collection('worlds').doc(id).get();
-    return snap.exists ? { id: snap.id, ...snap.data() } : null;
-  } catch (err) {
-    console.error('Failed to fetch world:', err);
-    return null;
-  }
-}
-
-function openModal() {
-  modalWorldName.textContent = `◈ ${pendingWorld.title || 'WORLD LOCKED'}`;
-  modalText.textContent = `Subscribe to ${CHANNEL_NAME} on YouTube, then verify your subscription to unlock this download.`;
-  modalStatus.hidden = true;
-  modalStatus.className = 'modal-status';
-  modalActions.hidden = false;
-  downloadLinkBtn.hidden = true;
-  modalOverlay.hidden = false;
-}
-
-function closeModal() {
-  modalOverlay.hidden = true;
-  pendingWorld = null;
-}
-
-modalClose.addEventListener('click', closeModal);
-modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
-
-openChannelBtn.addEventListener('click', () => {
-  window.open(YOUTUBE_CHANNEL_URL, '_blank', 'noopener');
-});
-
-verifyBtn.addEventListener('click', async () => {
-  await verifySubscription();
-});
-
-async function verifySubscription() {
-  if (!currentAccessToken) {
-    // Access token missing (e.g. returning session) — re-auth to obtain
-    // a fresh token carrying the youtube.readonly scope.
-    modalStatus.hidden = false;
-    modalStatus.className = 'modal-status pending';
-    modalStatus.textContent = 'Refreshing Google session…';
-    const user = await signIn();
-    if (!user || !currentAccessToken) {
-      modalStatus.className = 'modal-status denied';
-      modalStatus.textContent = 'Could not verify — please try signing in again.';
-      return;
-    }
-  }
-
-  verifyBtn.disabled = true;
-  modalStatus.hidden = false;
-  modalStatus.className = 'modal-status pending';
-  modalStatus.textContent = 'Tekshirilmoqda… checking your subscription…';
-
-  try {
-    const isSubscribed = await checkYouTubeSubscription(currentAccessToken, YOUTUBE_CHANNEL_ID);
-
-    if (isSubscribed) {
-      modalStatus.className = 'modal-status pending';
-      modalStatus.textContent = 'Subscription confirmed ✔';
-      modalActions.hidden = true;
-      downloadLinkBtn.hidden = false;
-      downloadLinkBtn.href = pendingWorld.downloadUrl || '#';
-
-      // Reflect unlocked state on the underlying card button too.
-      if (pendingWorld._btn) {
-        pendingWorld._btn.outerHTML = `
-          <a class="btn btn-unlocked" href="${escapeHtml(pendingWorld.downloadUrl || '#')}" target="_blank" rel="noopener">
-            <span>Download World</span>
-          </a>`;
-      }
+// Foydalanuvchi holatini doimiy kuzatib turish
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        currentUser = user;
+        // Splash screen (darvoza)ni yopish va asosiy saytni ochish
+        loginGate.classList.add("hidden");
+        mainContent.classList.remove("hidden");
+        
+        // Profil rasmini joylashtirish
+        userAvatar.src = user.photoURL || "https://via.placeholder.com/40";
+        
+        // ADMIN ekanligini tekshirish
+        if (user.email === ADMIN_EMAIL) {
+            adminSection.classList.remove("hidden");
+        } else {
+            adminSection.classList.add("hidden");
+        }
+        
+        // Dunyolarni Firestore'dan real-vaqtda yuklab olishni boshlash
+        listenToWorlds();
     } else {
-      modalStatus.className = 'modal-status denied';
-      modalStatus.textContent = 'Not subscribed yet. Subscribe, then check again.';
-      window.open(YOUTUBE_CHANNEL_URL, '_blank', 'noopener');
-      verifyBtn.textContent = 'Check Again';
+        // Tizimdan chiqilgan bo'lsa, faqat login oynasini ko'rsatish
+        loginGate.classList.remove("hidden");
+        mainContent.classList.add("hidden");
     }
-  } catch (err) {
-    console.error('YouTube verification failed:', err);
-    modalStatus.className = 'modal-status denied';
-    modalStatus.textContent = 'Verification failed. Please try again.';
-  } finally {
-    verifyBtn.disabled = false;
-  }
+});
+
+// 4. ADMIN: FIREBASE STORAGE'GA RASM YUKLASH VA FIRESTORE'GA SAQLASH
+adminForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    
+    const title = document.getElementById("world-title").value;
+    const version = document.getElementById("world-version").value;
+    const optifine = document.getElementById("world-optifine").checked;
+    const desc = document.getElementById("world-desc").value;
+    const downloadLink = document.getElementById("world-link").value;
+    const imageFile = document.getElementById("world-image").files[0];
+    
+    if (!imageFile) return;
+    
+    // Rasm uchun unikal nom yaratish va Storage referensiyasini olish
+    const storageRef = ref(storage, `world_images/${Date.now()}_${imageFile.name}`);
+    const uploadTask = uploadBytesResumable(storageRef, imageFile);
+    
+    progressBarContainer.classList.remove("hidden");
+    document.getElementById("btn-submit-world").disabled = true;
+    
+    // Yuklanish jarayonini (Progress bar) kuzatish
+    uploadTask.on('state_changed', 
+        (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            progressBar.style.width = progress + '%';
+        }, 
+        (error) => {
+            console.error("Rasmni yuklashda xatolik:", error);
+            alert("Rasm yuklanmadi. Firebase Storage qoidalarini tekshiring.");
+            progressBarContainer.classList.add("hidden");
+            document.getElementById("btn-submit-world").disabled = false;
+        }, 
+        async () => {
+            // Yuklanish muvaffaqiyatli tugagach, rasmdan doimiy URL link olamiz
+            const imageURL = await getDownloadURL(uploadTask.snapshot.ref);
+            
+            // Ma'lumotlarni Firestore'ga yozish
+            try {
+                await addDoc(collection(db, "worlds"), {
+                    title: title,
+                    version: version,
+                    optifine: optifine,
+                    description: desc,
+                    downloadLink: downloadLink,
+                    imageUrl: imageURL,
+                    createdAt: new Date()
+                });
+                
+                alert("Yangi dunyo muvaffaqiyatli qo'shildi!");
+                adminForm.reset();
+            } catch (err) {
+                console.error("Firestore'ga yozishda xatolik:", err);
+            } finally {
+                progressBarContainer.classList.add("hidden");
+                progressBar.style.width = '0%';
+                document.getElementById("btn-submit-world").disabled = false;
+            }
+        }
+    );
+});
+
+// 5. FIRESTORE'DAN DUNYOLARNI UKLAB OLISH VA EKRANGA CHIQARISH
+function listenToWorlds() {
+    const q = query(collection(db, "worlds"), orderBy("createdAt", "desc"));
+    
+    onSnapshot(q, (snapshot) => {
+        allWorlds = [];
+        worldsGrid.innerHTML = "";
+        
+        if (snapshot.empty) {
+            // Agar bazada hech narsa bo'lmasa, namunaviy 2 ta dunyoni ko'rsatamiz
+            showPlaceholders();
+            return;
+        }
+        
+        snapshot.forEach((doc) => {
+            allWorlds.push({ id: doc.id, ...doc.data() });
+        });
+        
+        renderWorlds(allWorlds);
+    });
 }
 
-/**
- * Calls YouTube Data API v3 subscriptions.list with mine=true, scoped to
- * a single channel via forChannelId. Returns true if the signed-in user
- * is subscribed to YOUTUBE_CHANNEL_ID.
- */
-async function checkYouTubeSubscription(accessToken, channelId) {
-  const url = new URL('https://www.googleapis.com/youtube/v3/subscriptions');
-  url.searchParams.set('part', 'snippet');
-  url.searchParams.set('mine', 'true');
-  url.searchParams.set('forChannelId', channelId);
+function renderWorlds(worlds) {
+    worldsGrid.innerHTML = "";
+    if (worlds.length === 0) {
+        worldsGrid.innerHTML = `<div class="loading-spinner">Qidiruv bo'yicha hech qanday dunyo topilmadi.</div>`;
+        return;
+    }
+    
+    worlds.forEach(world => {
+        const card = document.createElement("div");
+        card.className = "world-card";
+        card.innerHTML = `
+            <div class="world-img-container">
+                <img src="${world.imageUrl}" alt="${world.title}" class="world-img" onerror="this.src='https://via.placeholder.com/350x180?text=Minecraft+World'">
+                <div class="badge-container">
+                    <span class="badge">Versiya: ${world.version}</span>
+                    ${world.optifine ? '<span class="badge optifine">OptiFine</span>' : ''}
+                </div>
+            </div>
+            <div class="world-info">
+                <h3 class="world-title">${world.title}</h3>
+                <p class="world-desc">${world.description}</p>
+                <button class="neon-btn btn-unlock" data-link="${world.downloadLink}">
+                    <i class="fas fa-lock"></i> Yuklab olishni ochish
+                </button>
+            </div>
+        `;
+        worldsGrid.appendChild(card);
+    });
+    
+    // Yuklab olish tugmalariga klik hodisasini bog'lash
+    document.querySelectorAll(".btn-unlock").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            activeDownloadLink = e.currentTarget.getAttribute("data-link");
+            // Agar foydalanuvchi admin bo'lsa — obunani tekshirmasdan to'g'ridan-to'g'ri yuklab oladi
+            if (currentUser && currentUser.email === ADMIN_EMAIL) {
+                window.open(activeDownloadLink, '_blank');
+            } else {
+                openSubModal();
+            }
+        });
+    });
+}
 
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
+// 6. REAL-VAYTDA JONLI QIDIRUV (REAL-TIME SEARCH)
+searchBar.addEventListener("input", (e) => {
+    const queryText = e.target.value.toLowerCase().trim();
+    
+    const filteredWorlds = allWorlds.filter(world => {
+        return world.title.toLowerCase().includes(queryText) || 
+               world.version.toLowerCase().includes(queryText) || 
+               world.description.toLowerCase().includes(queryText);
+    });
+    
+    renderWorlds(filteredWorlds);
+});
 
-  if (!res.ok) {
-    // 401 usually means the access token expired — force a re-auth next time.
-    if (res.status === 401) currentAccessToken = null;
-    throw new Error(`YouTube API error: ${res.status}`);
-  }
+// 7. YOUTUBE API: OBUNANI TEKSHIRISH LOGIKASI
+function openSubModal() {
+    subModal.classList.remove("hidden");
+    modalErrorMsg.classList.add("hidden");
+}
 
-  const data = await res.json();
-  return Array.isArray(data.items) && data.items.length > 0;
+closeModal.addEventListener("click", () => subModal.classList.add("hidden"));
+
+btnVerifySub.addEventListener("click", async () => {
+    btnVerifySub.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Tekshirilmoqda...`;
+    btnVerifySub.disabled = true;
+    
+    // Agar Google Login qilgandagi token hali mavjud bo'lmasa qayta so'raymiz
+    if (!userAccessToken) {
+        alert("Sessiya eskirgan. Iltimos saytni yangilab, Google orqali qayta kiring.");
+        btnVerifySub.innerHTML = `<i class="fas fa-check-circle"></i> 2. Tekshirish`;
+        btnVerifySub.disabled = false;
+        return;
+    }
+
+    try {
+        // YouTube Data API v3 orqali obunani tekshirish (subscriptions.list)
+        const response = await fetch(`https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&forChannelId=${CHANNEL_ID}&mine=true`, {
+            headers: {
+                'Authorization': `Bearer ${userAccessToken}`,
+                'Accept': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+        
+        // Agar massivda ma'lumot bo'lsa, demak obuna bo'lgan
+        if (data.items && data.items.length > 0) {
+            modalErrorMsg.classList.add("hidden");
+            subModal.classList.add("hidden");
+            
+            // Yuklab olish linkini yangi oynada ochish
+            window.open(activeDownloadLink, '_blank');
+        } else {
+            // Obuna topilmasa xatolik matnini chiqarish
+            modalErrorMsg.classList.remove("hidden");
+        }
+    } catch (error) {
+        console.error("YouTube API bilan bog'lanishda xatolik:", error);
+        alert("YouTube tizimi obunangizni tasdiqlay olmadi. Iltimos kanalga o'tib obuna bo'lganingizga ishonch hosil qiling.");
+    } finally {
+        btnVerifySub.innerHTML = `<i class="fas fa-check-circle"></i> 2. Tekshirish`;
+        btnVerifySub.disabled = false;
+    }
+});
+
+// Zaxira namunaviy kartochkalar (Baza bo'sh bo'lgan holat uchun)
+function showPlaceholders() {
+    const dummyWorlds = [
+        {
+            title: "CraftOrbit Survival World V1",
+            version: "1.20.1",
+            optifine: true,
+            description: "Chiroyli shaderlar uchun optimizatsiya qilingan, barcha avtomatik fermalar qurilgan va ulkan geymerlar bazasiga ega ilk omon qolish dunyomiz.",
+            downloadLink: "https://www.mediafire.com",
+            imageUrl: ""
+        }
+    ];
+    renderWorlds(dummyWorlds);
 }
