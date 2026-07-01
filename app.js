@@ -5,14 +5,14 @@ import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "fi
 
 // 1. FIREBASE KONFIGURATSIYANGIZ
 const firebaseConfig = {
-  apiKey: "AIzaSyBqKqszWBCMrKIjN0Wb9PxC7wArkjd5FSU",
-  authDomain: "netchat-52007.firebaseapp.com",
-  databaseURL: "https://netchat-52007-default-rtdb.firebaseio.com",
-  projectId: "netchat-52007",
-  storageBucket: "netchat-52007.firebasestorage.app",
-  messagingSenderId: "145404562699",
-  appId: "1:145404562699:web:5eeb4c6abc3e18675b660e",
-  measurementId: "G-YKM3J5YR9F"
+  apiKey: "AIzaSyAmkYb3t_wQrludIhEr942IwxVX59UeN4w",
+  authDomain: "school-d7629.firebaseapp.com",
+  databaseURL: "https://school-d7629-default-rtdb.firebaseio.com",
+  projectId: "school-d7629",
+  storageBucket: "school-d7629.firebasestorage.app",
+  messagingSenderId: "750763790329",
+  appId: "1:750763790329:web:09f13c4e835c63c5893728",
+  measurementId: "G-GS590PP42Q"
 };
 
 // Firebase xizmatlarini ishga tushirish
